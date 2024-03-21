@@ -30,3 +30,24 @@ All the networks follow `C1 C2 c3 P1 C4 C5 C6 c7 P2 C8 C9 C10 GAP c11` pattern w
 - Accuracy of more than 70% can be easily achieved with fewer than 50000 parameters
 - Dropout was required for this model to get rid of overfitting
 
+# Batch Normalization
+### Overview
+- Batch Normalization aims to stabilize the learning process and improve convergence times by normalizing the inputs of each layer
+- It can reduce internal covariate shift
+
+### Results:
+- Total parameters: 40,248
+- Best train accuracy: 78.33% at epoch 20
+- Best test accuracy: 77.34% at epoch 19
+
+#### Loss and Accuracy Plots
+![loss_group](plots/loss_batch_norm.png)
+
+#### Misclassified Images in Test Data
+![mis_img_group](plots/misclass_batch_norm.png)
+
+
+### Analysis
+- Accuracy of more than 70% can be easily achieved with fewer than 50000 parameters
+- Training accuracy is slightly better than test accuracy and it indicates overfitting. Increasing dropout value did not remove this aspect.
+
