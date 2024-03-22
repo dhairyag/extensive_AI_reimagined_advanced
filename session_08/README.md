@@ -59,8 +59,8 @@ All the networks follow `C1 C2 c3 P1 C4 C5 C6 c7 P2 C8 C9 C10 GAP c11` pattern w
 
 ### Results:
 - Total parameters: 40,248
-- Best train accuracy: 78.33% at epoch 20
-- Best test accuracy: 77.34% at epoch 19
+- Best train accuracy: 72.7% at epoch 20
+- Best test accuracy: 71.38% at epoch 19
 
 #### Loss and Accuracy Plots
 ![loss_group](plots/loss_batch_norm.png)
@@ -70,6 +70,6 @@ All the networks follow `C1 C2 c3 P1 C4 C5 C6 c7 P2 C8 C9 C10 GAP c11` pattern w
 
 
 ### Analysis
-- Accuracy of more than 70% can be easily achieved with fewer than 50000 parameters
+- Accuracy of more than 70% can be achieved with fewer than 50000 parameters
 - Training accuracy is slightly better than test accuracy and it indicates overfitting. Increasing dropout value did not remove this aspect.
 
