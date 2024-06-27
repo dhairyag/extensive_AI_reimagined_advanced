@@ -13,14 +13,22 @@ def read_text_files(folder_path):
         if filename.endswith(".txt"):
             file_path = os.path.join(folder_path, filename)
             with open(file_path, 'r', encoding='utf-8') as file:
-                combined_text += file.read() + " "  # Add a space to separate contents of different files
+                combined_text += file.read() + " "  # Add newline to separate contents of different files
     #print(combined_text[:100], combined_text[-100:], len(combined_text))
     return combined_text
 
-def clean_text(text):
+def clean_text(text, valid_chars_set, replaced_char=None):
+    text = replace_unwanted_chars(text, valid_chars_set, replaced_char)
     gpt2pat = re.compile(r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
     return re.findall(gpt2pat, text)
-    
+
+def replace_unwanted_chars(text, valid_chars_set, replaced_char=None):
+    # Use list comprehension to quickly replace unwanted characters
+    if replaced_char == None:
+        replaced_char = ''
+    result = ''.join([char if char in valid_chars_set else replaced_char for char in text])
+    return result
+
 def get_stats(ids, counts=None):
     counts = {} if counts is None else counts
     for pair in zip(ids, ids[1:]):
@@ -30,7 +38,6 @@ def get_stats(ids, counts=None):
 def merge(ids, pair, idx):
     newids = []
     i = 0
-    id = 9
     #print(f"ids {ids} pair {pair} idx {idx}")
     #print("lllr")
     while i < len(ids):
@@ -55,7 +62,7 @@ def train(ids, num_merges, univ_vocab):
             stats = get_stats(word_id, stats)
         #print("stats",stats)
         pair = max(stats, key=stats.get)
-        if stats[pair] < 2:
+        if len(stats) < 2:
             break
         #print("pair",pair)
         idx = 10000 + i
@@ -79,17 +86,16 @@ def get_init_vocab(u_ids):
     #print(u_ids)
     return vocab
 
-def decode(ids, vocab):
+def decode(ids, univ_vocab):
     # given ids , return Python strings
-    tokens = b"".join(vocab[idx] for idx in ids)
-    text = tokens.decode("utf-8", errors="replace")
+    text = "".join(univ_vocab[idx] for idx in ids)
     return text
 
 def encode(text, merges):
     # given string, return list of ints
-    print(text)
+    #print(text)
     tokens = list(map(ord, text)) #list(text.encode("utf-8"))
-    print(tokens)
+    #print(tokens)
     while len(tokens) >= 2:
         stats = get_stats(tokens)
         #print("stats ", stats)
@@ -104,10 +110,11 @@ def encode(text, merges):
     #print("done endode tok ", tokens)
     return tokens
 
-def encode_ordinary(text, merges):
+def encode_ordinary(text, merges, valid_char_set):
     """Encoding that ignores any special tokens."""
     # split text into chunks of text by categories defined in regex pattern
-    text_chunks = clean_text(text) #re.findall(compiled_pattern, text)
+    replace_char = chr(191) # inverted char
+    text_chunks = clean_text(text,valid_char_set,replace_char)
     # all chunks of text are encoded separately, then results are joined
     ids = []
     for chunk in text_chunks:
@@ -117,28 +124,73 @@ def encode_ordinary(text, merges):
         #print("encode ord ",ids)
     
     return ids
-    
+
+def unicode_chars_range(start, end):
+    return [chr(i) for i in range(start, end+1)]
+
+def list_unicode_chars(sp_list):
+    return [chr(i) for i in sp_list]
+
+def prepare_init_vocab():
+    # functions to list characters in a given Unicode range
+    # Devanagari
+    special_chars = unicode_chars_range(0x0020, 0x0040)
+    punchuation1_chars = unicode_chars_range(0x005B, 0x0060)
+    punchuation2_chars = unicode_chars_range(0x007B, 0x007E)
+
+    # Devanagari
+    devanagari_chars = unicode_chars_range(0x0900, 0x097F)
+
+    # Devanagari Extended
+    devanagari_extended_chars = unicode_chars_range(0xA8E0, 0xA8FF)
+
+    # General Punctuations list from wiki page
+    # (–,—,―,‗,‛,“,”,„,†,‡,•,…,‰,′,″,‹,›,‼,‾,⁄)
+    pun_list = [0x2013,0x2014,0x2015,0x2017,0x2018,0x2019,0x201A,0x201B,0x201C,0x201D,0x201E,0x2020\
+                ,0x2021,0x2022,0x2026,0x2030,0x2032,0x2033,0x2039,0x203A,0x203C,0x203E,0x2044,0x204A]
+    # append inverted-? and newline
+    pun_list.append(0x00BF)
+    pun_list.append(10)
+    punctuation_chars = list_unicode_chars(pun_list)
+
+    # Superscripts and Subscripts
+    #super_subscript_chars = unicode_chars_range(0x2070, 0x209F)
+
+    # Combine all characters
+    all_chars_list = (punchuation1_chars + punchuation2_chars + special_chars + devanagari_chars + 
+                devanagari_extended_chars + punctuation_chars)
+
+    # Print all characters with their Unicode code points
+    #for char in all_chars:
+    #    print(f"Character: {char}, Unicode: {ord(char)}")
+    init_vocab = {ord(ch1): ch1 for ch1 in all_chars_list}
+    return set(all_chars_list), init_vocab
+
+
+valid_char_set, univ_vocab = prepare_init_vocab()
+
 corpus = read_text_files("./all_text/")
-corpus_words = clean_text(corpus)
-print("corpus_lines ", corpus_words)
+replace_char = None # inverted char
+corpus_words = clean_text(corpus, valid_char_set, replace_char)
+#print("corpus_lines ", corpus_words)
 
 corpus = ""
 for word in corpus_words:
     corpus += word
-print(corpus)
+#print(corpus)
 
 tokens = list(map(ord, corpus))
 
-print(tokens)
+#print(tokens)
 
 ids = [list(map(ord, word)) for word in corpus_words]
 
 #list(set(tokens))
-unique_char_ids = list(set(tokens))
-print(" unique_char_ids ", unique_char_ids)
+#unique_char_ids = list(set(tokens))
+#print(" unique_char_ids ", unique_char_ids)
 
-univ_vocab = get_init_vocab(unique_char_ids)
-print(univ_vocab)
+#get_init_vocab(unique_char_ids)
+#print(univ_vocab)
 
 with open("quant.txt", 'w', encoding='utf-8') as file:
     wfile = "num_merges n_tokens n_orig_corpus_chars n_tokens_corpus compression"
@@ -146,15 +198,15 @@ with open("quant.txt", 'w', encoding='utf-8') as file:
 
 n_orig_corpus_chars = len(corpus)
 
-#vocab_size = 00
-
 def main(num_merges):
     global n_orig_corpus_chars, corpus_words, univ_vocab, corpus
-    print(" n merges ", num_merges)
+    global ids, valid_char_set
+    #print(" n merges ", num_merges)
     
     univ_vocab_copy = univ_vocab.copy()
+    ids_copy = ids.copy()
     # create a BPE tokenizer object
-    merges, univ_vocab_copy = train(ids, num_merges, univ_vocab_copy)
+    merges, univ_vocab_copy = train(ids_copy, num_merges, univ_vocab_copy)
     #print("merges",merges)
     #print("vocab1",univ_vocab)
     
@@ -162,16 +214,16 @@ def main(num_merges):
     #print(toks)
     n_tokens = len(univ_vocab_copy)
     #print(f"\n\nBPE tokenization result of text\n\n'{text}'")
-    tokens_corpus = encode_ordinary(corpus, merges)
+    tokens_corpus = encode_ordinary(corpus, merges, valid_char_set)
     n_tokens_corpus = len(tokens_corpus)
     #print(" n_tokens_corpus for voc size ", vocab_size, " -- ", n_tokens_corpus)
 
     # Save vocab to a JSON file
-    with open(f'vocab_{pdf}.json', 'w', encoding='utf-8') as vocab_file:
+    with open(f'vocab_{num_merges}.json', 'w', encoding='utf-8') as vocab_file:
         json.dump(univ_vocab_copy, vocab_file, ensure_ascii=False, indent=4)
 
     # Save merges to a text file
-    with open(f'merges_{pdf}.txt', 'w', encoding='utf-8') as merges_file:
+    with open(f'merges_{num_merges}.txt', 'w', encoding='utf-8') as merges_file:
         for combo, id in merges.items():
             merges_file.write(' '.join(map(str, combo)) + f' {id}\n')
     
@@ -179,35 +231,30 @@ def main(num_merges):
         wfile = f"\n{num_merges} {n_tokens} {n_orig_corpus_chars} {n_tokens_corpus} {n_orig_corpus_chars/n_tokens_corpus}"
         file.write(wfile)
     
+    text = "तू कसा A आहेस"
+    t1_toks = encode_ordinary(text, merges, valid_char_set)
+    text = decode(t1_toks, univ_vocab_copy)
+    print(len(t1_toks), len(text))
+    with open("tmpDel.txt", 'a', encoding='utf-8') as file:
+        for t1 in t1_toks:
+            file.write(f"{t1}, ")
+        file.write(f"\n {text}")
+    
     return True
 
-'''
-merges, univ_vocab_copy = main(2000)
-with open(f'vocab_2.json', 'w', encoding='utf-8') as vocab_file:
-    json.dump(univ_vocab_copy, vocab_file, ensure_ascii=False, indent=4)
-
-# Save merges to a text file
-with open(f'merges_2.txt', 'w', encoding='utf-8') as merges_file:
-    for combo, id in merges.items():
-        merges_file.write(' '.join(map(str, combo)) + f' {id}\n')
-
-toks = encode_ordinary(corpus, merges)
-print(toks)
-'''
 
 results = {}
-merge_range = list(range(1000,4000,1000))
-#num_threads = 12
+merge_range = list(range(1000,15000,1000))
+
 with concurrent.futures.ThreadPoolExecutor() as executor:
     future_to_pdf = {executor.submit(main, ii): ii for ii in merge_range}
     for future in concurrent.futures.as_completed(future_to_pdf):
-        pdf = future_to_pdf[future]
+        n_merges = future_to_pdf[future]
         try:
             flag = future.result()
-            results[pdf] = flag
+            results[n_merges] = flag
             
         except Exception as e:
             print(f" error {e}")
             #results[vocab_s] = f"Error: {e}"
-
 
