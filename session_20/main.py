@@ -2,6 +2,7 @@ import os
 import regex as re
 import concurrent.futures
 import json
+from collections import defaultdict
 
 def read_text_files(folder_path):
     """
@@ -14,12 +15,18 @@ def read_text_files(folder_path):
             file_path = os.path.join(folder_path, filename)
             with open(file_path, 'r', encoding='utf-8') as file:
                 combined_text += file.read() + " "  # Add newline to separate contents of different files
-    #print(combined_text[:100], combined_text[-100:], len(combined_text))
     return combined_text
 
 def clean_text(text, valid_chars_set, replaced_char=None):
     text = replace_unwanted_chars(text, valid_chars_set, replaced_char)
-    gpt2pat = re.compile(r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
+    #gpt2pat = re.compile(r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
+    gpt2pat = re.compile(r"""
+        's|'t|'re|'ve|'m|'ll|'d|                     # English contractions
+        \s*[\u0900-\u097F]+(?:[\u093E-\u094D\u0950-\u0954\u0962-\u0963]+)*|  # Devanagari letters and diacritics with leading spaces
+        \s*\d+|                                      # Digits with leading spaces
+        [^\s\w\u0900-\u097F]+|                       # Punctuation and symbols
+        \s+                                          # Whitespace
+    """, re.VERBOSE)
     return re.findall(gpt2pat, text)
 
 def replace_unwanted_chars(text, valid_chars_set, replaced_char=None):
@@ -53,6 +60,7 @@ def merge(ids, pair, idx):
     return newids
 
 def train(ids, num_merges, univ_vocab):
+    global n_vocab_init
     merges = {} # (int, int) -> int
     #print("ids",ids)
 
@@ -65,7 +73,7 @@ def train(ids, num_merges, univ_vocab):
         if len(stats) < 2:
             break
         #print("pair",pair)
-        idx = 10000 + i
+        idx = n_vocab_init + i
         #print(f"merging {pair} into a new tolen {idx}")
         ids = [merge(word_id, pair, idx) for word_id in ids]
         merges[pair] = idx
@@ -92,9 +100,11 @@ def decode(ids, univ_vocab):
     return text
 
 def encode(text, merges):
+    global  char_to_int
     # given string, return list of ints
     #print(text)
-    tokens = list(map(ord, text)) #list(text.encode("utf-8"))
+    tokens = [char_to_int[char] for char in text]
+    # list(map(ord, text)) #list(text.encode("utf-8"))
     #print(tokens)
     while len(tokens) >= 2:
         stats = get_stats(tokens)
@@ -140,9 +150,11 @@ def prepare_init_vocab():
 
     # Devanagari
     devanagari_chars = unicode_chars_range(0x0900, 0x097F)
+    print(f"devanagari_chars : {devanagari_chars}")
 
     # Devanagari Extended
     devanagari_extended_chars = unicode_chars_range(0xA8E0, 0xA8FF)
+    print(f"devanagari_extended_chars : {devanagari_extended_chars}")
 
     # General Punctuations list from wiki page
     # (–,—,―,‗,‛,“,”,„,†,‡,•,…,‰,′,″,‹,›,‼,‾,⁄)
@@ -157,19 +169,22 @@ def prepare_init_vocab():
     #super_subscript_chars = unicode_chars_range(0x2070, 0x209F)
 
     # Combine all characters
-    all_chars_list = (punchuation1_chars + punchuation2_chars + special_chars + devanagari_chars + 
-                devanagari_extended_chars + punctuation_chars)
+    all_chars_list = (devanagari_chars + devanagari_extended_chars + special_chars + punchuation1_chars + \
+                      punchuation2_chars + punctuation_chars)
 
     # Print all characters with their Unicode code points
     #for char in all_chars:
     #    print(f"Character: {char}, Unicode: {ord(char)}")
-    init_vocab = {ord(ch1): ch1 for ch1 in all_chars_list}
-    return set(all_chars_list), init_vocab
+    #init_vocab = {ord(ch1): ch1 for ch1 in (all_chars_list)}
+    init_vocab = {ii: ch1 for ii, ch1 in enumerate(all_chars_list)}
+    char_to_int = {ch1: ii for ii, ch1 in enumerate(all_chars_list)}
+    return set(all_chars_list), init_vocab, char_to_int
 
 
-valid_char_set, univ_vocab = prepare_init_vocab()
+valid_char_set, univ_vocab, char_to_int = prepare_init_vocab()
+n_vocab_init = len(univ_vocab)
 
-corpus = read_text_files("./all_text/")
+corpus = read_text_files("./all_/")
 replace_char = None # inverted char
 corpus_words = clean_text(corpus, valid_char_set, replace_char)
 #print("corpus_lines ", corpus_words)
@@ -179,11 +194,13 @@ for word in corpus_words:
     corpus += word
 #print(corpus)
 
-tokens = list(map(ord, corpus))
+#tokens = list(map(ord, corpus))
 
 #print(tokens)
 
-ids = [list(map(ord, word)) for word in corpus_words]
+#ids = [list(map(ord, word)) for word in corpus_words]
+# 
+ids = [[char_to_int[char] for char in word] for word in corpus_words]
 
 #list(set(tokens))
 #unique_char_ids = list(set(tokens))
@@ -198,7 +215,7 @@ with open("quant.txt", 'w', encoding='utf-8') as file:
 
 n_orig_corpus_chars = len(corpus)
 
-def main(num_merges):
+def create_tokens(num_merges):
     global n_orig_corpus_chars, corpus_words, univ_vocab, corpus
     global ids, valid_char_set
     #print(" n merges ", num_merges)
@@ -223,31 +240,37 @@ def main(num_merges):
         json.dump(univ_vocab_copy, vocab_file, ensure_ascii=False, indent=4)
 
     # Save merges to a text file
-    with open(f'merges_{num_merges}.txt', 'w', encoding='utf-8') as merges_file:
-        for combo, id in merges.items():
-            merges_file.write(' '.join(map(str, combo)) + f' {id}\n')
+    merges_with_string_keys = {str(k): v for k, v in merges.items()}
+    with open(f'merges_{num_merges}.json', 'w', encoding='utf-8') as merges_file:
+        json.dump(merges_with_string_keys, merges_file, ensure_ascii=False, indent=4)
     
-    with open("quant.txt", 'a', encoding='utf-8') as file:
+    with open(f"quant_{num_merges}.txt", 'w', encoding='utf-8') as file:
+        wfile = "num_merges n_tokens n_orig_corpus_chars n_tokens_corpus compression"
+        file.write(wfile)
         wfile = f"\n{num_merges} {n_tokens} {n_orig_corpus_chars} {n_tokens_corpus} {n_orig_corpus_chars/n_tokens_corpus}"
         file.write(wfile)
     
-    text = "तू कसा A आहेस"
+    text = "क्रिकेट हा जगभरातला आणि त्यातही भारतात विशेष लोकप्रिय असलेला खेळ आहे. त्यात यंदा क्रिकेट\
+            वर्ल्ड कप भारतात होणार असल्याने क्रिकेटरसिकांच्या उत्साहाला उधाण आलं आहे."
     t1_toks = encode_ordinary(text, merges, valid_char_set)
     text = decode(t1_toks, univ_vocab_copy)
     print(len(t1_toks), len(text))
-    with open("tmpDel.txt", 'a', encoding='utf-8') as file:
-        for t1 in t1_toks:
-            file.write(f"{t1}, ")
-        file.write(f"\n {text}")
+    #with open("tmpDel.txt", 'a', encoding='utf-8') as file:
+    #    for t1 in t1_toks:
+    #        file.write(f"{t1}, ")
+    #    file.write(f"\n {text}")
     
     return True
 
 
-results = {}
-merge_range = list(range(1000,15000,1000))
+merge_range = [4000, 6000, 8000, 10000, 15000]
+for nmer in merge_range:
+    create_tokens(nmer)
 
+'''
+results = {}
 with concurrent.futures.ThreadPoolExecutor() as executor:
-    future_to_pdf = {executor.submit(main, ii): ii for ii in merge_range}
+    future_to_pdf = {executor.submit(create_tokens, ii): ii for ii in merge_range}
     for future in concurrent.futures.as_completed(future_to_pdf):
         n_merges = future_to_pdf[future]
         try:
@@ -257,4 +280,4 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
         except Exception as e:
             print(f" error {e}")
             #results[vocab_s] = f"Error: {e}"
-
+'''
