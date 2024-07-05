@@ -1,8 +1,6 @@
 import os
 import regex as re
-import concurrent.futures
 import json
-from collections import defaultdict
 
 def read_text_files(folder_path):
     """
@@ -10,7 +8,7 @@ def read_text_files(folder_path):
     """
     combined_text = ""
     for filename in os.listdir(folder_path):
-        print(filename)
+        print("reading.. ",filename)
         if filename.endswith(".txt"):
             file_path = os.path.join(folder_path, filename)
             with open(file_path, 'r', encoding='utf-8') as file:
@@ -150,11 +148,11 @@ def prepare_init_vocab():
 
     # Devanagari
     devanagari_chars = unicode_chars_range(0x0900, 0x097F)
-    print(f"devanagari_chars : {devanagari_chars}")
+    #print(f"devanagari_chars : {devanagari_chars}")
 
     # Devanagari Extended
     devanagari_extended_chars = unicode_chars_range(0xA8E0, 0xA8FF)
-    print(f"devanagari_extended_chars : {devanagari_extended_chars}")
+    #print(f"devanagari_extended_chars : {devanagari_extended_chars}")
 
     # General Punctuations list from wiki page
     # (–,—,―,‗,‛,“,”,„,†,‡,•,…,‰,′,″,‹,›,‼,‾,⁄)
@@ -184,7 +182,7 @@ def prepare_init_vocab():
 valid_char_set, univ_vocab, char_to_int = prepare_init_vocab()
 n_vocab_init = len(univ_vocab)
 
-corpus = read_text_files("./all_/")
+corpus = read_text_files("./input_text_files/")
 replace_char = None # inverted char
 corpus_words = clean_text(corpus, valid_char_set, replace_char)
 #print("corpus_lines ", corpus_words)
@@ -194,20 +192,9 @@ for word in corpus_words:
     corpus += word
 #print(corpus)
 
-#tokens = list(map(ord, corpus))
 
-#print(tokens)
-
-#ids = [list(map(ord, word)) for word in corpus_words]
-# 
 ids = [[char_to_int[char] for char in word] for word in corpus_words]
 
-#list(set(tokens))
-#unique_char_ids = list(set(tokens))
-#print(" unique_char_ids ", unique_char_ids)
-
-#get_init_vocab(unique_char_ids)
-#print(univ_vocab)
 
 with open("quant.txt", 'w', encoding='utf-8') as file:
     wfile = "num_merges n_tokens n_orig_corpus_chars n_tokens_corpus compression"
@@ -236,14 +223,17 @@ def create_tokens(num_merges):
     #print(" n_tokens_corpus for voc size ", vocab_size, " -- ", n_tokens_corpus)
 
     # Save vocab to a JSON file
+    print("writing vocab for n = ",num_merges)
     with open(f'vocab_{num_merges}.json', 'w', encoding='utf-8') as vocab_file:
         json.dump(univ_vocab_copy, vocab_file, ensure_ascii=False, indent=4)
 
     # Save merges to a text file
+    print("writing merges for n = ",num_merges)
     merges_with_string_keys = {str(k): v for k, v in merges.items()}
     with open(f'merges_{num_merges}.json', 'w', encoding='utf-8') as merges_file:
         json.dump(merges_with_string_keys, merges_file, ensure_ascii=False, indent=4)
     
+    print("writing compression for n = ",num_merges)
     with open(f"quant_{num_merges}.txt", 'w', encoding='utf-8') as file:
         wfile = "num_merges n_tokens n_orig_corpus_chars n_tokens_corpus compression"
         file.write(wfile)
@@ -255,29 +245,11 @@ def create_tokens(num_merges):
     t1_toks = encode_ordinary(text, merges, valid_char_set)
     text = decode(t1_toks, univ_vocab_copy)
     print(len(t1_toks), len(text))
-    #with open("tmpDel.txt", 'a', encoding='utf-8') as file:
-    #    for t1 in t1_toks:
-    #        file.write(f"{t1}, ")
-    #    file.write(f"\n {text}")
     
-    return True
 
-
+# provide the number of merges to be performed
 merge_range = [4000, 6000, 8000, 10000, 15000]
 for nmer in merge_range:
     create_tokens(nmer)
 
-'''
-results = {}
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    future_to_pdf = {executor.submit(create_tokens, ii): ii for ii in merge_range}
-    for future in concurrent.futures.as_completed(future_to_pdf):
-        n_merges = future_to_pdf[future]
-        try:
-            flag = future.result()
-            results[n_merges] = flag
-            
-        except Exception as e:
-            print(f" error {e}")
-            #results[vocab_s] = f"Error: {e}"
-'''
+
