@@ -12,5 +12,8 @@ The code can generate tokens based on the input text files. Any devnagari langua
 #### Output
 Final vocabulary and merge combinations are written in `.json` files (`vocab_<num>.json` and `merges_<num>.json`) and the statistics related to the compression ratio obtained is written in `quant_<num>.txt`.
 
+### HuggingFace App as demo
+[An app](https://huggingface.co/spaces/dhairyashil/marathi_tokenizer) based on `n_merges=15,000` and trained on around ~10MB of Marathi language text is provided on HuggingFace.
+
 #### Referance
 - [Tokenization tutorial by Karpathy](https://youtu.be/zduSFxRajkE?si=RvSu-MN5sikGIW4w)
