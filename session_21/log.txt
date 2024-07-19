@@ -932,18 +932,3 @@ step917 | loss: 0.09737294912338257 | dt: 2276.15ms | tok/sec:  7198.12 | norm: 
 step918 | loss: 0.11362192779779434 | dt: 2347.37ms | tok/sec:  6979.74 | norm: 0.95
 step919 | loss: 0.09121493250131607 | dt: 2269.91ms | tok/sec:  7217.92 | norm: 0.83
 tensor(0.0912, device='mps:0', grad_fn=<NllLossBackward0>)
-> Hello, I'm a language model,:
-like heavy ancient: siring yet thou
-thee butT please thee, therein, and awhile
-> Hello, I'm a language model, and commanded against Henry Bolable like a guest, to anakest; not the general,? And:
-> Hello, I'm a language model, and so it naked,
-you come, I a man, conduct it wounds' gold,ant: I
-> Hello, I'm a language model, and so it throne,
-a right lies
-th, title, it kiss. What would
-the truth
-> Hello, I'm a language model, thataps
-th sleepingarest you finds would
-H cuck the fairebalt looks, friar Lod
-python3 train_get2-9-speedup9.py  94.92s user 423.86s system 23% cpu 36:48.62 total
-(erav2) (base) dhairyashil@Dhairyashils-MacBook-Pro CodeFiles 2 % 
