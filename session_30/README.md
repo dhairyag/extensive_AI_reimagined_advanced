@@ -7,7 +7,16 @@ This project fine-tunes the Microsoft Phi-2 language model to create a multimoda
 This project aims to enhance the Phi-2 language model with image understanding capabilities by integrating CLIP embeddings and using a custom projection layer. The result is a multimodal AI system that can process both text and image inputs, making it suitable for tasks such as image captioning, visual question answering, and more.
 
 ## Demo
-The app is deployed on Hugging Face Spaces [here](https://huggingface.co/spaces/dhairyashil/multimodal_phi2).
+The app is deployed on Hugging Face Spaces [click-here](https://huggingface.co/spaces/dhairyashil/multimodal_phi2).
+
+
+### App Example Output
+
+![Example Output](images/HF_app_screenshot.png)
+
+This image showcases an example of the multimodal Phi-2 model's output.
+
+
 
 ## Key Components
 
