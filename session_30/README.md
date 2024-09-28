@@ -2,6 +2,8 @@
 
 This project fine-tunes the Microsoft Phi-2 language model to create a multimodal AI system capable of processing both text and image inputs.
 
+### [Finetuning log with code](https://github.com/dhairyag/extensive_AI_reimagined_advanced/blob/main/session_30/phi2-finetune-150k-4k-itr.ipynb)
+
 ## Project Overview
 
 This project aims to enhance the Phi-2 language model with image understanding capabilities by integrating CLIP embeddings and using a custom projection layer. The result is a multimodal AI system that can process both text and image inputs, making it suitable for tasks such as image captioning, visual question answering, and more.
