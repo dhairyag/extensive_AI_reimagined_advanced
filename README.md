@@ -39,8 +39,8 @@ To study and compare different normalization techniques (Group Normalization, La
 - Analyzing the impact of normalization on model convergence and generalization
 - The project demonstrates a systematic approach to evaluating normalization techniques in deep learning, with a focus on practical implementation and performance analysis.
 
-## [Session 11: ](./session_11)
-Objective: Implement CIFAR10 image classification using a ResNet18 model from another [repo](https://github.com/dhairyag/main_ml_models_utils/tree/main).
+## [Session 11: CIFAR10 Image Classification with ResNet18](./session_11)
+Objective: Implement CIFAR10 image classification by importing ResNet18 model from another [repo](https://github.com/dhairyag/main_ml_models_utils/tree/main).
 
 Key Components:
 - Model: ResNet18 architecture
@@ -59,4 +59,42 @@ Key Components:
 - Implements custom training and evaluation loops
 
 The project demonstrates a complete machine learning workflow for image classification, from model training to result visualization and model persistence.
+
+## [Session 13: Pytorch-Lightning on CIFAR10](./session_13)
+The code demonstrates image classification on CIFAR10 dataset using [PyTorch Lightning](https://github.com/Lightning-AI/pytorch-lightning)
+
+#### Technology:
+- PyTorch Lightning
+
+#### Methodology:
+- Interactive data visualization and model training
+- Utilizes progress bars and other UI elements for real-time feedback
+- Modular approach with extensive use of widget models and layouts
+
+#### Focus:
+- Creating an interactive and user-friendly interface for machine learning tasks
+- Emphasis on real-time progress tracking and data presentation
+- Involves training, evaluating models on image datasets
+
+The code tries to create a rich, interactive environment for machine learning experiments or demonstrations.
+
+## [Session 19: Building GPT: Text generator](./session_19)
+Implement a small-scale GPT (Generative Pre-trained Transformer) model for text generation, trained on Shakespeare's works.
+
+#### Technology:
+- PyTorch
+
+#### Methodology:
+- Character-level tokenization
+- Transformer architecture with self-attention mechanisms
+- Training on a corpus of Shakespeare's text
+
+#### Key Components:
+- Data preprocessing and tokenization
+- Custom PyTorch modules for the transformer architecture
+- Training loop with gradient descent optimization
+- Text generation functionality
+
+#### Focus:
+The project emphasizes understanding and implementing core concepts of transformer-based language models on a smaller scale. It serves as an educational tool for learning about GPT-like architectures and their application to text generation tasks.
 
